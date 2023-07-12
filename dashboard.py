@@ -1,10 +1,19 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Jul  6 15:53:02 2023
+
+@author: matth
+"""
+
 import pandas as pd
 import streamlit as st
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
-from joblib import load
 import shap
+import json
+import requests
+import plotly.graph_objects as go
 
 shap.initjs()
 
@@ -18,109 +27,53 @@ st.set_page_config(
 
 st.title(':blue[Demande de prêt]')
 
-# Chargement du fichier clients
-@st.cache_data
-def load_df_test():
-    data_test = pd.read_csv('./donnees_test.csv')
-    return data_test
 
-data_test = load_df_test()
-noms_col = data_test.columns
-
-@st.cache_data
-def load_df_train():
-    data_train = pd.read_csv('./donnees_train_sample.csv')
-    return data_train
-
-data_train = load_df_train()
-
-# Chargement du modèle
-model = load('best_model.joblib')
-
-# Chargement des valeurs Shap
-@st.cache_data
-def load_shap_values(data):
-    explainer = shap.TreeExplainer(model)
-    shap_values = explainer(data)
-    return shap_values
-
-shap_values_test = load_shap_values(data_test)
-shap_values_train = load_shap_values(data_train.drop('TARGET',axis=1))
-
-
-# Affichage de la feature importance globale
-@st.cache_data
-def load_feat_imp():
-    importance = model.feature_importances_
-    indices = np.argsort(importance)
-    indices = indices[-10:]
-    color_list =  sns.color_palette("dark", len(noms_col)) 
-    fig, ax = plt.subplots()
-    ax.barh(range(len(indices)), importance[indices], color= [color_list[indices[i]] for i in range(10)],
-         align='center')  
-    ax.set_yticks(range(len(indices)), [(noms_col[j] + ' : ' + str(round(importance[j],3))) for j in indices],
-           fontweight="normal", fontsize=16) 
-    for i, ticklabel in enumerate(plt.gca().get_yticklabels()):
-        ticklabel.set_color(color_list[indices[i]])  
-    return fig
-
-feat_imp = load_feat_imp()
-
-# Chargement des définitions des features
-@st.cache_data
-def explications():
-    df_expli = pd.read_csv('./HomeCredit_columns_description.csv', encoding = 'latin-1')
-    return df_expli.sort_values('Row')
-
-df_expli = explications()
-
-
-def affiche_moy_clients():
-    fig4, ax = plt.subplots()
-    shap.plots.bar(shap_values_train)
-    fig4
-
-# Affichage de la prédiction
-def affiche_texte(score, proba):
-    if score == 0:
-        texte = f':green[Client sans risque à {proba}%]'
-        st.markdown("<span style='font-size: 40px;'>{}</span>".format(texte), unsafe_allow_html=True)
-    elif score == 1:
-        texte = f':red[Client à risque à {100-proba}%]'
-        st.markdown("<span style='font-size: 40px;'>{}</span>".format(texte), unsafe_allow_html=True)
-
-group_0 = data_train[data_train['TARGET'] == 0]
-group_1 = data_train[data_train['TARGET'] == 1]
+# Affichage de la jauge de prédiction
+def jauge(value):
+    fig = go.Figure(go.Indicator(
+    domain = {'x': [0, 1], 'y': [0, 1]},
+    value = value,
+    mode = "gauge+number+delta",
+    title = {'text': "Speed"},
+    delta = {'reference': 60},
+    gauge = {'axis': {'range': [None, 100]},
+             'steps' : [
+                 {'range': [0, 50], 'color': "lightgray"},
+                 {'range': [50, 60], 'color': "gray"}],
+             'threshold' : {'line': {'color': "red", 'width': 4}, 'thickness': 0.75, 'value': 60}}))
+    st.plotly_chart(fig)
 
 # Affichage du nuage de points
-def nuage_pts(feat1, feat2):
-    plt.scatter(group_0[feat1], group_0[feat2], marker = '.', color='blue', label='Clients sans risque')
-    plt.scatter(group_1[feat1], group_1[feat2], marker = '.', color='red', label='Clients à risque')
-    plt.scatter(data_client[feat1], data_client[feat2], marker = 'x', color = 'yellow', label = f'Client {id_client}')
+def nuage_pts(content_1, content_2, feat_1, feat_2):
+    plt.scatter(content_1['group_0'], content_2['group_0'], marker = '.', color='blue', label='Clients sans risque')
+    plt.scatter(content_1['group_1'], content_2['group_1'], marker = '.', color='red', label='Clients à risque')
+    plt.scatter(content_1['client'], content_2['client'], marker = 'x', color = 'yellow', label = f'Client {id_client}')
     plt.legend(loc = (-0.5,0.8))
-    plt.xlabel(feat1)
-    plt.ylabel(feat2)
+    plt.xlabel(feat_1)
+    plt.ylabel(feat_2)
 
 # Affichage de la distribution d'une feature
-def afficher_distributions(feat):
-    sns.histplot(group_0[feat], color='blue', label='Clients sans risque', kde = True)
-    sns.histplot(group_1[feat], color='red', label='clients à risque', kde = True)
-    plt.scatter(data_client[feat], 100, color = 'yellow', marker = 'o', label = f'Client {id_client}')
+def afficher_distributions(content):
+    sns.histplot(content['group_0'], color='blue', label='Clients sans risque', kde = True)
+    sns.histplot(content['group_1'], color='red', label='clients à risque', kde = True)
+    plt.scatter(content['client'],np.max(content['group_0']), color = 'yellow', marker = 'x', s = 100, label = f'Client {id_client}')
     plt.legend()
-    
-# Noms des features
-liste_features = df_expli['Row'].unique()
+ 
 
-# Liste des identifiants clients
-liste_id = data_test['SK_ID_CURR'].to_list()
+# Premier appel de l'API pour récupérer la liste des identifiants
+API_url = "http://127.0.0.1:5000/credit"
+response = requests.get(API_url)
+if response.status_code == 200: 
+    liste_id = response.json()
+else:
+    'Erreur lors de la requête à l\'API'
+
 
 # Fonctionnalités de la sidebar
 with st.sidebar:
     st.markdown("**Tester l'éligibilité**")
-    id_client = st.selectbox('Identifiant client : ', options = liste_id)
+    id_client = st.selectbox('Identifiant client : ', options = sorted(liste_id))
     predict_btn = st.checkbox('Evaluation')              
-    data_client = data_test.loc[data_test['SK_ID_CURR']==id_client]
-    index = data_client.index
     st.markdown("""---""")
     locale = st.checkbox("Afficher l'influence des caractéristiques du client")
     moy_clients = st.checkbox('Afficher la moyenne des clients')
@@ -130,66 +83,140 @@ with st.sidebar:
     distribution_feat = st.checkbox('Distribution des variables')
     st.markdown("""---""")
     afficher_descriptions = st.checkbox('Descriptions des caractéristiques')
-    
 
+
+# Affichage de la prédiction
 if predict_btn:
-    score = model.predict(data_client)
-    proba = round(model.predict_proba(data_client)[0][0]*100)
-    affiche_texte(score, proba)
-
-fig_3, fig_4 = st.columns(2)
-        
-if locale :
-    with fig_3:
-        st.markdown('**Influence des caractéristiques du client**')
-        fig3, ax = plt.subplots()
-        shap.plots.bar(shap_values_test[index])
-        fig3
-        
-if moy_clients:
-    with fig_4:
-        st.markdown('**Moyenne des clients**')
-        affiche_moy_clients()
+    API_url = f"http://127.0.0.1:5000/credit/{id_client}"
+    response = requests.get(API_url)
+    if response.status_code == 200:
+        resultats = response.json() 
+        proba = resultats['proba']
+        if proba >= 60:  # Seuil à 60%
+            texte = f':green[Client sans risque à {proba}%]'
+        elif proba > 50:
+            texte = f':red[Client à risque à {proba}%]'
+        else :
+            texte = f':red[Client à risque à {100-proba}%]'
+        st.markdown("<span style='font-size: 40px;'>{}</span>".format(texte), unsafe_allow_html=True)
+        jauge(proba)
+    else:
+        'Erreur'
 
 fig_1, fig_2 = st.columns(2)
-  
+
+# Affichage des données du client
 if info_client:
+    API_url = f"http://127.0.0.1:5000/credit/{id_client}/data"
+    response = requests.get(API_url)
     with fig_1:
         st.markdown("**Informations du client :**")
+        resultats = response.json()
+        data_client = pd.read_json(resultats['data'])
         data_client
-        
-if globale :
-    with fig_2:
-        st.markdown("**Influence globale des caractéristiques**")
-        feat_imp
 
+# Affichage de la feature importance globale        
+if globale :
+    API_url = "http://127.0.0.1:5000/credit/globale"
+    response = requests.get(API_url)
+    with fig_2:
+        content = json.loads(response.content)
+        shap_val_glob_0 = content['shap_values_0']
+        shap_val_glob_1 = content['shap_values_1']
+        liste_features = content['liste_features']
+        shap_globales = np.array([shap_val_glob_0, shap_val_glob_1])
+        st.markdown("**Influence globale des caractéristiques**")
+        fig = shap.summary_plot(shap_globales, features = liste_features, plot_type='bar')
+        st.pyplot(fig)
+
+
+fig_3, fig_4 = st.columns(2)
+
+# Affichage de la feature importance locale
+if locale :
+    API_url = f"http://127.0.0.1:5000/credit/locale/{id_client}"
+    response = requests.get(API_url)
+    response.status_code
+    with fig_3:
+        res = json.loads(response.content)
+        shap_val_local = res['shap_val']
+        base_value = res['shap_base']
+        feat_values = res['shap_data']
+        feat_names = res['feature_names']
+        explan = shap.Explanation(np.reshape(np.array(shap_val_local, dtype='float'), (1, -1)),
+                                   base_value,
+                                   data=np.reshape(np.array(feat_values, dtype='float'), (1, -1)),
+                                   feature_names=feat_names)
+        st.markdown('**Influence des caractéristiques du client**')
+        fig = shap.waterfall_plot(explan[0])
+        st.pyplot(fig)      
+
+# Affichage de la feature importance sur la moyenne des clients sans risque
+if moy_clients:
+    API_url = "http://127.0.0.1:5000/credit/moyenne"
+    response = requests.get(API_url)
+    with fig_4:
+        content = json.loads(response.content)
+        shap_val_glob_0 = content['shap_values_0']
+        shap_val_glob_1 = content['shap_values_1']
+        liste_features = content['liste_features']
+        shap_globales = np.array([shap_val_glob_0, shap_val_glob_1])
+        st.markdown('**Moyenne des clients sans risque**')
+        fig = shap.summary_plot(shap_globales, features = liste_features, plot_type='bar')
+        st.pyplot(fig)
+
+# Affichage des explications des features
 if afficher_descriptions:
-    feature = st.sidebar.selectbox('Sélectionner la variable', options = liste_features)
-    texte = df_expli.loc[df_expli['Row']==feature, 'Description'].values[0]
-    st.sidebar.markdown(texte)
+    API_url = "http://127.0.0.1:5000/credit/descriptions"
+    response = requests.get(API_url)
+    liste_features = response.json()
+    feature = st.sidebar.selectbox('Sélectionner la variable', options = sorted(liste_features))
+    if feature :
+        API_url = f"http://127.0.0.1:5000/credit/descriptions/{feature}"
+        response = requests.get(API_url)
+        texte = response.json()
+        st.sidebar.markdown(texte)
 
 fig_5, fig_6 = st.columns(2)
 
+# Affiche le graaphique bi-varié entre 2 features
 if afficher_nuage:
     with fig_5:
+        API_url = "http://127.0.0.1:5000/credit/liste_feature"
+        response = requests.get(API_url)
+        noms_col = response.json()
         feat_1 = st.selectbox('Première variable :', options = noms_col)
+        API_url = f"http://127.0.0.1:5000/credit/nuage/{feat_1}/{id_client}"
+        response = requests.get(API_url)
+        content_1 = json.loads(response.content)
+                
         feat_2 = st.selectbox('Deuxième variable :', options = noms_col)
+        API_url = f"http://127.0.0.1:5000/credit/nuage/{feat_2}/{id_client}"
+        response = requests.get(API_url)
+        content_2 = json.loads(response.content)
+        
     with fig_6:
         st.markdown('**Clients selon le risque**')
         fig6, ax = plt.subplots() 
-        nuage_pts(feat_1, feat_2)
+        nuage_pts(content_1, content_2, feat_1, feat_2)
         fig6
     
 fig_7, fig_8 = st.columns(2)
 
 if distribution_feat:
+    API_url = "http://127.0.0.1:5000/credit/liste_feature"
+    response = requests.get(API_url)
+    noms_col = response.json()
     with fig_7:
-        distrib_feat = st.selectbox('Variable :', options = noms_col)
-        st.markdown(f'**Valeur de la variable pour le client : {data_client[distrib_feat].values[0]}**')
+        feature = st.selectbox('Variable :', options = noms_col)
+        API_url = f"http://127.0.0.1:5000/credit/nuage/{feature}/{id_client}"
+        response = requests.get(API_url)
+        content = json.loads(response.content)
+        donnee_client = content['client']
+        st.markdown(f'**Valeur de la variable pour le client : {donnee_client}**')
     with fig_8:
-        st.markdown(f'**Distribution de la variable {distrib_feat}**')
+        st.markdown(f'**Distribution de la variable {feature}**')
         fig8, ax = plt.subplots()
-        afficher_distributions(distrib_feat)
+        afficher_distributions(content)
         fig8
-        
-        
+ 
