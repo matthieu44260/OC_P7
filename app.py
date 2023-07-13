@@ -6,14 +6,9 @@ Created on Thu Jul  6 11:08:41 2023
 """
 
 import pandas as pd
-import streamlit as st
-import numpy as np
-import seaborn as sns
-import matplotlib.pyplot as plt
 from joblib import load
 import shap
-from flask import Flask, jsonify, request
-import json
+from flask import Flask, jsonify
 
 
 shap.initjs()
@@ -35,13 +30,7 @@ model = load('best_model.joblib')
 
 # Chargement des valeurs Shap
 explainer = shap.TreeExplainer(model)
-def load_shap_values(data):
-    shap_values = explainer(data)
-    return shap_values
-
-shap_values_test = load_shap_values(data_test)
-shap_values_train_group_0 = load_shap_values(group_0.drop('TARGET',axis=1))
-#shap_values_train_group_1 = load_shap_values(group_1.drop('TARGET',axis=1))
+shap_values_test = explainer(data_test)
 
 # Chargement des définitions des features
 df_expli = pd.read_csv('./HomeCredit_columns_description.csv', encoding = 'latin-1')
@@ -53,46 +42,38 @@ liste_features = data_test.columns.tolist()
 liste_id = data_test['SK_ID_CURR'].to_list()
 
 
-# Renvoie la liste des identifiants
 @app.route('/credit', methods = ['GET'])
 def liste_identifiants():
-    return jsonify(liste_id)
+    """Renvoie la liste des identifiants clients et des features"""
+    return {'liste_id': liste_id,
+            'liste_features': liste_features}
 
-# Renvoie la liste des features
-@app.route('/credit/liste_feature', methods = ['GET'])
-def liste_feature():
-    return sorted(liste_features)
-
-# Renvoie la probabilité que le client soit sans risque
 @app.route('/credit/<id_client>', methods = ['GET'])
 def credit_client(id_client):
+    """Renvoie la probabilité que le client soit sans risque"""
     data_client = data_test.loc[data_test['SK_ID_CURR']== int(id_client)] 
     proba = model.predict_proba(data_client) # Calcul de la probabilité d'obtenir 0
-    proba_0 = round(proba[0][0]*100)
-    resultats = {}
-    resultats['proba'] = proba_0    
-    return jsonify(resultats)
+    proba_0 = round(proba[0][0]*100)  
+    return jsonify(proba_0)
 
-# Renvoie les données du client
 @app.route('/credit/<id_client>/data', methods = ['GET'])
 def donnees_client(id_client):
+    """Renvoie les données du client"""
     data_client = data_test.loc[data_test['SK_ID_CURR']== int(id_client)]
-    resultats = {}
-    resultats['data'] = data_client.to_json(orient='records')
+    resultats = data_client.to_json(orient='records')
     return jsonify(resultats)
 
-# Influence globale des features
 @app.route('/credit/globale', methods = ['GET'])
 def globale():
+    """Influence globale des features"""
     shap_val = explainer.shap_values(data_train.drop('TARGET',axis=1))
     return {'shap_values_0': shap_val[0].tolist(),
-            'shap_values_1': shap_val[1].tolist(),
-            'liste_features': liste_features
+            'shap_values_1': shap_val[1].tolist()
             }
-
-# Valeurs shap des données client    
+    
 @app.route('/credit/locale/<int:id_client>', methods = ['GET'])
 def valeurs_shap(id_client):
+    """Valeurs shap des données du client"""
     data_client = data_test.loc[data_test['SK_ID_CURR']== int(id_client)]
     index = data_client.index
     shap_values = shap_values_test[index]
@@ -102,32 +83,31 @@ def valeurs_shap(id_client):
     return {
         'shap_val': shap_val,
         'shap_base': shap_base,
-        'shap_data': shap_data,
-        'feature_names': liste_features
+        'shap_data': shap_data
             }
     
-# Valeurs shap du data_train_group_0 (clients sans risque)
 @app.route('/credit/moyenne', methods = ['GET'])
 def moyenne():
+    """Valeurs shap du data_train_group_0 (clients sans risque)"""
     shap_val = explainer.shap_values(group_0.drop('TARGET',axis=1))
     return {'shap_values_0': shap_val[0].tolist(),
-            'shap_values_1': shap_val[1].tolist(),
-            'liste_features': liste_features
+            'shap_values_1': shap_val[1].tolist()
             }
     
-# Explications des features
 @app.route('/credit/descriptions', methods = ['GET'])
 def descriptions():
+    """Liste des features disponibles qui ont une définition"""
     return list(set(sorted(df_expli['Row'].tolist())))
 
 @app.route('/credit/descriptions/<feature>', methods = ['GET'])
 def textes(feature):
+    """Explications des features"""
     texte = df_expli.loc[df_expli['Row'] == feature, 'Description'].tolist()
     return jsonify(texte)
 
-# Renvoie les valeurs des features pour les graphiques
 @app.route('/credit/nuage/<feature>/<id_client>', methods = ['GET'])
 def nuage(feature, id_client):
+    """Renvoie les valeurs des features pour les graphiques"""
     data_client = data_test.loc[data_test['SK_ID_CURR']== int(id_client)]
     return {'group_0': group_0[feature].tolist(),
             'group_1': group_1[feature].tolist(),
