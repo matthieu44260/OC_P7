@@ -59,7 +59,16 @@ def afficher_distributions(content):
     sns.histplot(content['group_1'], color='red', label='clients à risque', kde = True)
     plt.scatter(content['client'],1, color = 'yellow', marker = 'x', s = 100, label = f'Client {id_client}')
     plt.legend()
- 
+
+def assembler_shap_values(res):
+    shap_val_local = res['shap_val']
+    base_value = res['shap_base']
+    feat_values = res['shap_data']
+    explan = shap.Explanation(np.array(shap_val_local, dtype='float'),
+                              np.array(base_value, dtype = 'float'),
+                              data = np.array(feat_values, dtype='float'),
+                              feature_names = liste_features)
+    return explan
 
 # Premier appel de l'API pour récupérer la liste des identifiants
 API_url = "http://127.0.0.1:5000/credit"
@@ -120,12 +129,10 @@ if globale :
     API_url = "http://127.0.0.1:5000/credit/globale"
     response = requests.get(API_url)
     with fig_2:
-        content = json.loads(response.content)
-        shap_val_glob_0 = content['shap_values_0']
-        shap_val_glob_1 = content['shap_values_1']
-        shap_globales = np.array([shap_val_glob_0, shap_val_glob_1])
+        res = json.loads(response.content)
+        explan = assembler_shap_values(res)
         st.markdown("**Influence globale des caractéristiques**")
-        fig = shap.summary_plot(shap_globales, features = liste_features, plot_type='bar')
+        fig = shap.plots.bar(explan)
         st.pyplot(fig)
 
 
@@ -137,13 +144,7 @@ if locale :
     response = requests.get(API_url)
     with fig_3:
         res = json.loads(response.content)
-        shap_val_local = res['shap_val']
-        base_value = res['shap_base']
-        feat_values = res['shap_data']
-        explan = shap.Explanation(np.reshape(np.array(shap_val_local, dtype='float'), (1, -1)),
-                                   base_value,
-                                   data = np.reshape(np.array(feat_values, dtype='float'), (1, -1)),
-                                   feature_names = liste_features)
+        explan = assembler_shap_values(res)
         st.markdown('**Influence des caractéristiques du client**')
         fig = shap.waterfall_plot(explan[0])
         st.pyplot(fig)      
@@ -153,12 +154,9 @@ if moy_clients:
     API_url = "http://127.0.0.1:5000/credit/moyenne"
     response = requests.get(API_url)
     with fig_4:
-        content = json.loads(response.content)
-        shap_val_glob_0 = content['shap_values_0']
-        shap_val_glob_1 = content['shap_values_1']
-        shap_globales = np.array([shap_val_glob_0, shap_val_glob_1])
+        shap_values = response.json()
         st.markdown('**Moyenne des clients sans risque**')
-        fig = shap.summary_plot(shap_globales, features = liste_features, plot_type='bar')
+        fig = shap.bar_plot(np.array(shap_values), feature_names = liste_features, max_display = 10)
         st.pyplot(fig)
 
 # Affichage des explications des features

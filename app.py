@@ -66,9 +66,13 @@ def donnees_client(id_client):
 @app.route('/credit/globale', methods = ['GET'])
 def globale():
     """Influence globale des features"""
-    shap_val = explainer.shap_values(data_train.drop('TARGET',axis=1))
-    return {'shap_values_0': shap_val[0].tolist(),
-            'shap_values_1': shap_val[1].tolist()
+    shap_val = shap_values_test.values.tolist()
+    shap_base = shap_values_test.base_values.tolist()
+    shap_data = shap_values_test.data.tolist()
+    return {
+        'shap_val': shap_val,
+        'shap_base': shap_base,
+        'shap_data': shap_data
             }
     
 @app.route('/credit/locale/<int:id_client>', methods = ['GET'])
@@ -89,11 +93,10 @@ def valeurs_shap(id_client):
 @app.route('/credit/moyenne', methods = ['GET'])
 def moyenne():
     """Valeurs shap du data_train_group_0 (clients sans risque)"""
-    shap_val = explainer.shap_values(group_0.drop('TARGET',axis=1))
-    return {'shap_values_0': shap_val[0].tolist(),
-            'shap_values_1': shap_val[1].tolist()
-            }
-    
+    shap_val = explainer(group_0.drop('TARGET',axis=1))
+    shap_val_values = shap_val.values.mean(axis=0).tolist()
+    return jsonify(shap_val_values)
+           
 @app.route('/credit/descriptions', methods = ['GET'])
 def descriptions():
     """Liste des features disponibles qui ont une définition"""
