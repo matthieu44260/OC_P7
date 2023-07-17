@@ -33,7 +33,7 @@ explainer = shap.TreeExplainer(model)
 shap_values_test = explainer(data_test)
 
 # Chargement des définitions des features
-df_expli = pd.read_csv('./HomeCredit_columns_description.csv', encoding = 'latin-1')
+df_expli = pd.read_csv('./Columns_description.csv', encoding = 'latin-1')
    
 # Noms des features
 liste_features = data_test.columns.tolist()
