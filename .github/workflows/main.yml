@@ -1,0 +1,45 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy_flask:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: akhileshns/heroku-deploy@v3.12.14 # This is the action
+        with:
+          heroku_api_key: ${{A56D7K23LIP8}}
+          heroku_app_name: "OC_P7" #Must be unique in Heroku
+          heroku_email: "matthieuelhakim@yahoo.fr"
+          appdir: "API"
+      
+      - name: Install Dependencies
+        run: python -m pip install --upgrade pip
+             pip install -r requirements.txt
+        working-directory: ./API
+
+  deploy-dashboard:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+
+      - uses: akhileshns/heroku-deploy@v3.12.14
+        with:
+          heroku_api_key: ${{A56D7K23LIP8}}
+          heroku_app_name: "OC_P7"
+          heroku_email: "matthieuelhakim@yahoo.fr"
+          appdir: "DASHBOARD"
+
+      - name: Install Dependencies
+        run: python -m pip install --upgrade pip
+             pip install -r requirements.txt
+        working-directory: ./DASHBOARD
