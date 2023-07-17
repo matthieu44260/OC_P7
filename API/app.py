@@ -26,7 +26,7 @@ group_0 = data_train[data_train['TARGET'] == 0]
 group_1 = data_train[data_train['TARGET'] == 1]
 
 # Chargement du modèle
-model = load('best_model.joblib')
+model = load('model.joblib')
 
 # Chargement des valeurs Shap
 explainer = shap.TreeExplainer(model)
