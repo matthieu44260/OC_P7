@@ -8,5 +8,3 @@ shap==0.41.0
 json==
 requests==2.31.0
 plotly==5.15.0
-joblib==1.2.0
-flask==2.2.3
