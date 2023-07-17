@@ -50,9 +50,7 @@ dashboard.ipynb
 dashboard_local.py
 dashboard_v1.py
 donnees_test.csv
-donnees_test_essai.csv
 donnees_train.csv
-donnees_train_essai.csv
 donnees_train_sample.csv
 essai_LGBM.ipynb
 installments_payments.csv
