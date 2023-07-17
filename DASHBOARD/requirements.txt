@@ -5,6 +5,5 @@ streamlit==1.23.1
 seaborn==0.12.2
 matplotlib==3.7.1
 shap==0.41.0
-json
 requests==2.31.0
 plotly==5.15.0
