@@ -15,7 +15,7 @@ import json
 import requests
 import plotly.graph_objects as go
 
-shap.initjs()
+
 
 st.set_option('deprecation.showPyplotGlobalUse', False)
 
