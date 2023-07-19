@@ -71,7 +71,7 @@ def assembler_shap_values(res):
     return explan
 
 # Premier appel de l'API pour récupérer la liste des identifiants
-API_url = " https://oc-p7-app-5d5721a47870.herokuapp.com/credit"
+API_url = "https://oc-p7-app-1bfc88840522.herokuapp.com/credit"
 response = requests.get(API_url)
 if response.status_code == 200: 
     resultats = response.json()
@@ -99,7 +99,7 @@ with st.sidebar:
 
 # Affichage de la prédiction
 if predict_btn:
-    API_url = f" https://oc-p7-app-5d5721a47870.herokuapp.com/credit/{id_client}"
+    API_url = f"https://oc-p7-app-1bfc88840522.herokuapp.com/credit/{id_client}"
     response = requests.get(API_url)
     if response.status_code == 200:
         proba = response.json()
@@ -116,7 +116,7 @@ fig_1, fig_2 = st.columns(2)
 
 # Affichage des données du client
 if info_client:
-    API_url = f" https://oc-p7-app-5d5721a47870.herokuapp.com/credit/{id_client}/data"
+    API_url = f"https://oc-p7-app-1bfc88840522.herokuapp.com/credit/{id_client}/data"
     response = requests.get(API_url)
     with fig_1:
         st.markdown("**Informations du client :**")
@@ -126,7 +126,7 @@ if info_client:
 
 # Affichage de la feature importance globale        
 if globale :
-    API_url = " https://oc-p7-app-5d5721a47870.herokuapp.com/credit/globale"
+    API_url = "https://oc-p7-app-1bfc88840522.herokuapp.com/credit/globale"
     response = requests.get(API_url)
     with fig_2:
         res = json.loads(response.content)
@@ -140,7 +140,7 @@ fig_3, fig_4 = st.columns(2)
 
 # Affichage de la feature importance locale
 if locale :
-    API_url = f" https://oc-p7-app-5d5721a47870.herokuapp.com/credit/locale/{id_client}"
+    API_url = f"https://oc-p7-app-1bfc88840522.herokuapp.com/credit/locale/{id_client}"
     response = requests.get(API_url)
     with fig_3:
         res = json.loads(response.content)
@@ -151,7 +151,7 @@ if locale :
 
 # Affichage de la feature importance sur la moyenne des clients sans risque
 if moy_clients:
-    API_url = " https://oc-p7-app-5d5721a47870.herokuapp.com/credit/moyenne"
+    API_url = "https://oc-p7-app-1bfc88840522.herokuapp.com/credit/moyenne"
     response = requests.get(API_url)
     with fig_4:
         shap_values = response.json()
@@ -161,12 +161,12 @@ if moy_clients:
 
 # Affichage des explications des features
 if afficher_descriptions:
-    API_url = " https://oc-p7-app-5d5721a47870.herokuapp.com/credit/descriptions"
+    API_url = "https://oc-p7-app-1bfc88840522.herokuapp.com/credit/descriptions"
     response = requests.get(API_url)
     liste_features = response.json()
     feature = st.sidebar.selectbox('Sélectionner la variable', options = sorted(liste_features))
     if feature :
-        API_url = f"http://oc-p7-app-5d5721a47870.herokuapp.com/credit/descriptions/{feature}"
+        API_url = f"https://oc-p7-app-1bfc88840522.herokuapp.com/credit/descriptions/{feature}"
         response = requests.get(API_url)
         texte = response.json()
         st.sidebar.markdown(texte)
@@ -177,12 +177,12 @@ fig_5, fig_6 = st.columns(2)
 if afficher_nuage:
     with fig_5:
         feat_1 = st.selectbox('Première variable :', options = sorted(liste_features))
-        API_url = f" https://oc-p7-app-5d5721a47870.herokuapp.com/credit/nuage/{feat_1}/{id_client}"
+        API_url = f"https://oc-p7-app-1bfc88840522.herokuapp.com/credit/nuage/{feat_1}/{id_client}"
         response = requests.get(API_url)
         content_1 = json.loads(response.content)
                 
         feat_2 = st.selectbox('Deuxième variable :', options = sorted(liste_features))
-        API_url = f" https://oc-p7-app-5d5721a47870.herokuapp.com/credit/nuage/{feat_2}/{id_client}"
+        API_url = f"https://oc-p7-app-1bfc88840522.herokuapp.com/credit/nuage/{feat_2}/{id_client}"
         response = requests.get(API_url)
         content_2 = json.loads(response.content)
         
@@ -198,7 +198,7 @@ fig_7, fig_8 = st.columns(2)
 if distribution_feat:
     with fig_7:
         feature = st.selectbox('Variable :', options = sorted(liste_features))
-        API_url = f" https://oc-p7-app-5d5721a47870.herokuapp.com/credit/nuage/{feature}/{id_client}"
+        API_url = f"https://oc-p7-app-1bfc88840522.herokuapp.com/credit/nuage/{feature}/{id_client}"
         response = requests.get(API_url)
         content = json.loads(response.content)
         donnee_client = content['client']
