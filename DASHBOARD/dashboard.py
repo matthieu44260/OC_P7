@@ -48,7 +48,7 @@ def nuage_pts(content_1, content_2, feat_1, feat_2):
     """Affichage du nuage de points"""
     plt.scatter(content_1['group_0'], content_2['group_0'], marker = '.', color='blue', label='Clients sans risque')
     plt.scatter(content_1['group_1'], content_2['group_1'], marker = '.', color='red', label='Clients à risque')
-    plt.scatter(content_1['client'], content_2['client'], marker = 'x', color = 'yellow', label = f'Client {id_client}')
+    plt.scatter(content_1['client'], content_2['client'], marker = 'x', color = 'orange', label = f'Client {id_client}')
     plt.legend(loc = (-0.5,0.8))
     plt.xlabel(feat_1)
     plt.ylabel(feat_2)
@@ -57,7 +57,7 @@ def afficher_distributions(content):
     """Affichage de la distribution d'une feature"""
     sns.histplot(content['group_0'], color='blue', label='Clients sans risque', kde = True)
     sns.histplot(content['group_1'], color='red', label='clients à risque', kde = True)
-    plt.scatter(content['client'],1, color = 'yellow', marker = 'x', s = 100, label = f'Client {id_client}')
+    plt.scatter(content['client'],1, color = 'orange', marker = 'x', s = 100, label = f'Client {id_client}')
     plt.legend()
 
 def assembler_shap_values(res):
