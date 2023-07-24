@@ -18,4 +18,5 @@ Construire un dashboard interactif à destination des gestionnaires de la relati
 Mettre en production le modèle de scoring de prédiction à l’aide d’une API, ainsi que le dashboard interactif qui appelle l’API pour les prédictions
 
 Lien de l'API : https://oc-p7-app-1bfc88840522.herokuapp.com/
+
 Lien du dashboard : https://oc-p7-dashboard-2f7763ac90ec.herokuapp.com/
