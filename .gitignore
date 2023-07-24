@@ -60,3 +60,5 @@ previous_application.csv
 sample_submission.csv
 submission_kernel02.csv
 templates/
+XGBClassifier_sur_test_confusion_matrix.png
+XGBClassifier_sur_test_roc_auc_curve.png
