@@ -18,17 +18,17 @@ liste_id = data_test['SK_ID_CURR'].to_list()
 liste_features = data_test.columns.tolist()
 
 # Chargement des données du client exemple
-id_client = 167394
+id_client = 221167
 data_client = data_test.loc[data_test['SK_ID_CURR'] == id_client]
 
 # Chargement du modèle
-model = load('best_model.joblib')
+model = load('model.joblib')
 
 
 def test_liste_identifiants():
     """Teste si la fonction renvoie bien la liste des identifiants clients
     et des features"""
-    url = "http://127.0.0.1:5000/credit"
+    url = "https://oc-p7-app-1bfc88840522.herokuapp.com/credit"
     response = requests.get(url)
     resultats = response.json()
     assert resultats['liste_id'] == liste_id
@@ -37,7 +37,7 @@ def test_liste_identifiants():
 
 def test_credit_client():
     """Teste si la fonction renvoie la bonne probabilité"""
-    url = "http://127.0.0.1:5000/credit/167394"
+    url = "https://oc-p7-app-1bfc88840522.herokuapp.com/credit/221167"
     response = requests.get(url)
     proba_api = response.json()
 
@@ -49,7 +49,7 @@ def test_credit_client():
    
 def test_valeurs_shap():
     """Teste si la fonction renvoie les valeurs shap du client"""
-    url = "http://127.0.0.1:5000/credit/locale/167394"
+    url = "https://oc-p7-app-1bfc88840522.herokuapp.com/credit/locale/221167"
     response = requests.get(url)
     res = json.loads(response.content)
     shap_val_api = res['shap_val']
