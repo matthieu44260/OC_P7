@@ -57,7 +57,7 @@ def credit_client(id_client):
         proba_0 = round(proba[0][0]*100)  
         return jsonify(proba_0)
     else :
-        print('Identifiant inconnu')
+        return 'Identifiant inconnu'
 
 @app.route('/credit/<id_client>/data', methods = ['GET'])
 def donnees_client(id_client):
