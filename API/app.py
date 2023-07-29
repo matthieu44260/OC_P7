@@ -51,10 +51,13 @@ def liste_identifiants():
 @app.route('/credit/<id_client>', methods = ['GET'])
 def credit_client(id_client):
     """Renvoie la probabilité que le client soit sans risque"""
-    data_client = data_test.loc[data_test['SK_ID_CURR']== int(id_client)]
-    proba = model.predict_proba(data_client) # Calcul de la probabilité d'obtenir 0
-    proba_0 = round(proba[0][0]*100)  
-    return jsonify(proba_0)
+    if id_client in liste_id :
+        data_client = data_test.loc[data_test['SK_ID_CURR']== int(id_client)]
+        proba = model.predict_proba(data_client) # Calcul de la probabilité d'obtenir 0
+        proba_0 = round(proba[0][0]*100)  
+        return jsonify(proba_0)
+    else :
+        print('Identifiant inconnu')
 
 @app.route('/credit/<id_client>/data', methods = ['GET'])
 def donnees_client(id_client):
