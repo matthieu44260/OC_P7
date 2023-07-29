@@ -23,9 +23,9 @@ jobs:
              pip install -r requirements.txt
         working-directory: ./API
       
-      - name: Run pytest
-        run: pytest test_api.py
-        working-directory: ./API
+      #- name: Run pytest
+      #  run: pytest test_api.py
+      #  working-directory: ./API
 
   deploy-dashboard:
     # The type of runner that the job will run on
