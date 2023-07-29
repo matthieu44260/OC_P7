@@ -24,7 +24,7 @@ jobs:
         working-directory: ./API
       
       - name: Run pytest
-        run: pytest test_api.py
+        run: python test_api.py
         working-directory: ./API
 
   deploy-dashboard:
